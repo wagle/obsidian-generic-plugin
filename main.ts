@@ -1,4 +1,10 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import * as d3 from "d3";
+import * as viz from "viz";
+import { graphviz } from "d3-graphviz";
+//as d3gv from "d3-graphviz";
+
+import {execSync} from "child_process";
 
 // Remember to rename these classes and interfaces!
 
@@ -28,6 +34,80 @@ export default class MyPlugin extends Plugin {
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status Bar Text');
 
+		// add an svgx widget
+		this.registerMarkdownCodeBlockProcessor("svg2", (source, el, ctx) => {
+			//const Viz = require('viz.js');
+			//const { Module, render } = require('viz.js/full.render.js');
+			//let viz = new Viz({ Module, render });
+
+			console.log("---hello there source---");
+			console.log(source);
+			console.log("---hello there el---");
+			console.log(el);
+			d3.select("#div").graphviz()
+				.renderDot('digraph  {a -> b}');		});
+		this.registerMarkdownCodeBlockProcessor("svgx", (source, el, ctx) => {
+			const execSync = require('child_process').execSync;
+			// import { execSync } from 'child_process';  // replace ^ if using ES modules
+
+			const output = execSync('cat /Users/wagle/obsidian-internal-link-test.dot', {encoding: 'utf-8'});  // the default is 'buffer'
+
+			const Viz = require('viz.js');
+			const { Module, render } = require('viz.js/full.render.js');
+
+			let viz = new Viz({ Module, render });
+
+			console.log("---hello there source---");
+			console.log(source);
+			console.log("---hello there el---");
+			console.log(el);
+			viz.renderString(output)
+				.then((result: string) => {
+					console.log("---good---");
+					console.log(result);
+					el.outerHTML = result;
+				})
+				.catch((error: any) => {
+					// Create a new Viz instance (@see Caveats page for more info)
+					viz = new Viz({ Module, render });
+
+					// Possibly display the error
+					console.log("---start bad---");
+					console.log(error);
+					console.log("---end bad---");
+				});
+		});
+		// add an ls widget
+		this.registerMarkdownCodeBlockProcessor("testx", (source, el, ctx) => {
+			const execSync = require('child_process').execSync;
+			// import { execSync } from 'child_process';  // replace ^ if using ES modules
+
+			const output = execSync('cat /Users/wagle/obsidian-internal-link-test.svg', {encoding: 'utf-8'});  // the default is 'buffer'
+			//el.innerHTML = '<em>bar</em>';
+			try {
+				el.outerHTML = output;
+			}
+			catch(err) {
+				new Notice (err.message);
+			}
+		});
+		// add a csv widget
+		this.registerMarkdownCodeBlockProcessor("csv", (source, el, ctx) => {
+			const rows = source.split("\n").filter((row) => row.length > 0);
+
+			const table = el.createEl("table");
+			const body = table.createEl("tbody");
+
+			for (let i = 0; i < rows.length; i++) {
+				const cols = rows[i].split(",");
+
+				const row = body.createEl("tr");
+
+				for (let j = 0; j < cols.length; j++) {
+					row.createEl("td", { text: cols[j] });
+				}
+			}
+		});
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'open-sample-modal-simple',
